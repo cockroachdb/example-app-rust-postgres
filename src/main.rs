@@ -6,14 +6,17 @@ use openssl::ssl::{SslConnector, SslMethod};
 use postgres::{error::SqlState, Client, Error, Transaction};
 use postgres_openssl::MakeTlsConnector;
 
+// BEGIN ssl_config
 fn ssl_config() -> Result<MakeTlsConnector, ErrorStack> {
     let builder = SslConnector::builder(SslMethod::tls())?;
     Ok(MakeTlsConnector::new(builder.build()))
 }
+// END ssl_config
 
 /// Runs op inside a transaction and retries it as needed.
 /// On non-retryable failures, the transaction is aborted and
 /// rolled back; on success, the transaction is committed.
+// BEGIN execute_txn
 fn execute_txn<T, F>(client: &mut Client, op: F) -> Result<T, Error>
 where
     F: Fn(&mut Transaction) -> Result<T, Error>,
@@ -32,7 +35,9 @@ where
     }
     .and_then(|t| txn.commit().map(|_| t))
 }
+// END execute_txn
 
+// BEGIN transfer_funds
 fn transfer_funds(txn: &mut Transaction, from: Uuid, to: Uuid, amount: i64) -> Result<(), Error> {
     // Read the balance.
     let from_balance: i64 = txn
@@ -52,13 +57,16 @@ fn transfer_funds(txn: &mut Transaction, from: Uuid, to: Uuid, amount: i64) -> R
     )?;
     Ok(())
 }
+// END transfer_funds
 
+// BEGIN delete_accounts
 fn delete_accounts(txn: &mut Transaction) -> Result<(), Error> {
     txn.execute(
         "DELETE FROM accounts", &[],
     )?;
     Ok(())
 }
+// END delete_accounts
 
 fn main() {
     let connector = ssl_config().unwrap();

@@ -1,4 +1,4 @@
-The sample code in this directory demonstrates how to connect to CockroachDB with the [Rust Postgres driver](https://crates.io/crates/postgres).
+The sample code in this directory demonstrates how to connect to CockroachDB with the [Rust Postgres driver](https://crates.io/crates/postgres). For detailed instructions on running this example, see the [tutorial](https://www.cockroachlabs.com/docs/stable/build-a-rust-app-with-cockroachdb.html).
 
 ## Prerequisites
 

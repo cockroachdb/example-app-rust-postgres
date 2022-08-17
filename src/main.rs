@@ -67,7 +67,7 @@ fn delete_accounts(txn: &mut Transaction) -> Result<(), Error> {
 }
 // END delete_accounts
 
-fn main() {
+fn main() -> Result<(), Error> {
     let connector = ssl_config().unwrap();
     let connection_uri = env!("DATABASE_URL");
     let mut client =
@@ -79,46 +79,39 @@ fn main() {
         .execute(
             "CREATE TABLE IF NOT EXISTS accounts (id UUID PRIMARY KEY, balance INT)",
             &[],
-        )
-        .unwrap();
+        )?;
 
     // Delete the accounts
-    execute_txn(&mut client, |txn| delete_accounts(txn)).unwrap();
+    execute_txn(&mut client, |txn| delete_accounts(txn))?;
     println!("Deleted existing accounts.");
 
     let id1 = Uuid::new_v4();
     let id2 = Uuid::new_v4();
     // Insert two rows into the "accounts" table.
-    client
-        .execute(
-            "INSERT INTO accounts (id, balance) VALUES ($1, 1000), ($2, 250)",
-            &[&id1, &id2],
-        )
-        .unwrap();
+    client.execute(
+        "INSERT INTO accounts (id, balance) VALUES ($1, 1000), ($2, 250)",
+        &[&id1, &id2],
+    )?;
 
     // Print out the balances.
     println!("Balances before transfer:");
     for row in &client
-        .query("SELECT id, balance FROM accounts", &[])
-        .unwrap()
-    {
+        .query("SELECT id, balance FROM accounts", &[])? {
         let id: Uuid = row.get(0);
         let balance: i64 = row.get(1);
         println!("account id: {}  balance: ${}", id, balance);
     }
     
     // Run a transfer in a transaction.
-    execute_txn(&mut client, |txn| transfer_funds(txn, id1, id2, 100)).unwrap();
+    execute_txn(&mut client, |txn| transfer_funds(txn, id1, id2, 100))?;
 
     // Check account balances after the transaction.
     println!("Final balances:");
-    for row in &client
-        .query("SELECT id, balance FROM accounts", &[])
-        .unwrap()
-    {
+    for row in client.query("SELECT id, balance FROM accounts", &[])? {
         let id: Uuid = row.get(0);
         let balance: i64 = row.get(1);
         println!("account id: {}  balance: ${}", id, balance);
     }
+    Ok(())
     
 }

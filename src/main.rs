@@ -1,5 +1,4 @@
 use std::env;
-use chrono::Utc;
 use uuid::Uuid;
 use openssl::error::ErrorStack;
 use openssl::ssl::{SslConnector, SslMethod};
@@ -74,6 +73,7 @@ fn main() {
     let mut client =
         Client::connect(&connection_uri, connector).unwrap();
 
+    println!("Creating accounts table if it doesn't already exist.");
     // Create the "accounts" table.
     client
         .execute(
@@ -81,6 +81,10 @@ fn main() {
             &[],
         )
         .unwrap();
+
+    // Delete the accounts
+    execute_txn(&mut client, |txn| delete_accounts(txn)).unwrap();
+    println!("Deleted existing accounts.");
 
     let id1 = Uuid::new_v4();
     let id2 = Uuid::new_v4();
@@ -93,31 +97,28 @@ fn main() {
         .unwrap();
 
     // Print out the balances.
-    println!("Balances at {:?}:", Utc::now());
+    println!("Balances before transfer:");
     for row in &client
         .query("SELECT id, balance FROM accounts", &[])
         .unwrap()
     {
         let id: Uuid = row.get(0);
         let balance: i64 = row.get(1);
-        println!("account id: {}  balance: {}", id, balance);
+        println!("account id: {}  balance: ${}", id, balance);
     }
     
     // Run a transfer in a transaction.
     execute_txn(&mut client, |txn| transfer_funds(txn, id1, id2, 100)).unwrap();
 
     // Check account balances after the transaction.
-    println!("Final balances at {:?}:", Utc::now());
+    println!("Final balances:");
     for row in &client
         .query("SELECT id, balance FROM accounts", &[])
         .unwrap()
     {
         let id: Uuid = row.get(0);
         let balance: i64 = row.get(1);
-        println!("account id: {}  balance: {}", id, balance);
+        println!("account id: {}  balance: ${}", id, balance);
     }
     
-    // Delete the accounts
-    execute_txn(&mut client, |txn| delete_accounts(txn)).unwrap();
-    println!("Deleted accounts.");
 }

@@ -4,16 +4,7 @@ The sample code in this directory demonstrates how to connect to CockroachDB wit
 
 You must have rust and Cargo installed on your local machine, and a running CockroachDB cluster.
 
-## Step 1. Build the example
-
-In a terminal run the following command to download the dependencies and build the application.
-
-~~~ shell
-cd bank
-cargo build
-~~~
-
-## Step 2. Set the `DATABASE_URL` environment variable
+## Step 1. Set the `DATABASE_URL` environment variable
 
 Set the `DATABASE_URL` environment variable to the connection URL of your CockroachDB cluster.
 
@@ -29,15 +20,17 @@ Where:
 * `<port>` is the port number on which CockroachDB is running on the host.
 * `<routing ID>` is the routing ID cluster if the CockroachDB cluster is a Serverless cluster. Omit the options query parameter if the cluster is a Self-Hosted or Dedicated cluster.
 
-## Step 4. Run the Rust code
+**Note**: You must set `sslmode=require` in the connection URL, as the `postgres` driver does not recognize `sslmode=verify-full`. This example uses `postgres-openssl`, which will perform host verification when the `sslmode=require` option is set, so `require` is functionally equivalent to `verify-full`.
 
-Run the example:
+## Step 2. Run the Rust code
+
+Build and run the example:
 
 ~~~ shell
 cargo run
 ~~~
 
-You should see output similar to this:
+After the dependencies are downloaded, the example is compiled and run. You should see output similar to this:
 
 ~~~
 Finished dev [unoptimized + debuginfo] target(s) in 0.13s

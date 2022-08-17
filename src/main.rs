@@ -75,11 +75,10 @@ fn main() -> Result<(), Error> {
 
     println!("Creating accounts table if it doesn't already exist.");
     // Create the "accounts" table.
-    client
-        .execute(
-            "CREATE TABLE IF NOT EXISTS accounts (id UUID PRIMARY KEY, balance INT)",
-            &[],
-        )?;
+    client.execute(
+        "CREATE TABLE IF NOT EXISTS accounts (id UUID PRIMARY KEY, balance INT)",
+        &[],
+    )?;
 
     // Delete the accounts
     execute_txn(&mut client, |txn| delete_accounts(txn))?;

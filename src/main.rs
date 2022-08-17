@@ -84,25 +84,25 @@ fn main() -> Result<(), Error> {
     execute_txn(&mut client, |txn| delete_accounts(txn))?;
     println!("Deleted existing accounts.");
 
-    let id1 = Uuid::new_v4();
-    let id2 = Uuid::new_v4();
+    let mut ids: Vec<Uuid> = Vec::new();
+
     // Insert two rows into the "accounts" table.
-    client.execute(
-        "INSERT INTO accounts (id, balance) VALUES ($1, 1000), ($2, 250)",
-        &[&id1, &id2],
-    )?;
+    for row in client.query(
+        "INSERT INTO accounts (id, balance) VALUES (gen_random_uuid(), 1000), (gen_random_uuid(), 250) RETURNING id", &[])? {
+        let id: Uuid = row.get(0);
+        ids.push(id);
+    }
 
     // Print out the balances.
     println!("Balances before transfer:");
-    for row in &client
-        .query("SELECT id, balance FROM accounts", &[])? {
+    for row in client.query("SELECT id, balance FROM accounts", &[])? {
         let id: Uuid = row.get(0);
         let balance: i64 = row.get(1);
         println!("account id: {}  balance: ${}", id, balance);
     }
     
     // Run a transfer in a transaction.
-    execute_txn(&mut client, |txn| transfer_funds(txn, id1, id2, 100))?;
+    execute_txn(&mut client, |txn| transfer_funds(txn, ids[0], ids[1], 100))?;
 
     // Check account balances after the transaction.
     println!("Final balances:");

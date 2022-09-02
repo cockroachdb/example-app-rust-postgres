@@ -12,16 +12,18 @@ fn ssl_config() -> Result<MakeTlsConnector, ErrorStack> {
 }
 // END ssl_config
 
+// BEGIN execute_txn
 /// Runs op inside a transaction and retries it as needed.
 /// On non-retryable failures, the transaction is aborted and
 /// rolled back; on success, the transaction is committed.
-// BEGIN execute_txn
 fn execute_txn<T, F>(client: &mut Client, op: F) -> Result<T, Error>
 where
     F: Fn(&mut Transaction) -> Result<T, Error>,
 {
     let mut txn = client.transaction()?;
     loop {
+        // Set a retry savepoint 
+        // See https://www.cockroachlabs.com/docs/stable/advanced-client-side-transaction-retries
         let mut sp = txn.savepoint("cockroach_restart")?;
         match op(&mut sp).and_then(|t| sp.commit().map(|_| t)) {
             Err(ref err)
@@ -59,8 +61,8 @@ fn transfer_funds(txn: &mut Transaction, from: Uuid, to: Uuid, amount: i64) -> R
 // END transfer_funds
 
 // BEGIN delete_accounts
-fn delete_accounts(txn: &mut Transaction) -> Result<(), Error> {
-    txn.execute(
+fn delete_accounts(client: &mut Client) -> Result<(), Error> {
+    client.execute(
         "DELETE FROM accounts", &[],
     )?;
     Ok(())
@@ -69,7 +71,7 @@ fn delete_accounts(txn: &mut Transaction) -> Result<(), Error> {
 
 fn main() -> Result<(), Error> {
     let connector = ssl_config().unwrap();
-    let connection_uri = env!("DATABASE_URL");
+    let connection_uri = env::var("DATABASE_URL").expect("$DATABASE_URL is not set");
     let mut client =
         Client::connect(&connection_uri, connector).unwrap();
 
@@ -81,17 +83,16 @@ fn main() -> Result<(), Error> {
     )?;
 
     // Delete the accounts
-    execute_txn(&mut client, |txn| delete_accounts(txn))?;
+    delete_accounts(&mut client)?;
     println!("Deleted existing accounts.");
 
-    let mut ids: Vec<Uuid> = Vec::new();
-
-    // Insert two rows into the "accounts" table.
-    for row in client.query(
-        "INSERT INTO accounts (id, balance) VALUES (gen_random_uuid(), 1000), (gen_random_uuid(), 250) RETURNING id", &[])? {
-        let id: Uuid = row.get(0);
-        ids.push(id);
-    }
+    // create the accounts and get the IDs
+    let ids: Vec<Uuid> =  client.query(
+        "INSERT INTO accounts (id, balance) VALUES (gen_random_uuid(), 1000), (gen_random_uuid(), 250) RETURNING id", &[])
+        .unwrap()
+        .iter()
+        .map(|row| row.get(0))
+        .collect();
 
     // Print out the balances.
     println!("Balances before transfer:");

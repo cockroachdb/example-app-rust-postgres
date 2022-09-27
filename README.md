@@ -1,59 +1,45 @@
-The sample code in this directory demonstrates how to connect to CockroachDB with the [Rust Postgres driver](https://crates.io/crates/postgres).
+The sample code in this directory demonstrates how to connect to CockroachDB with the [Rust Postgres driver](https://crates.io/crates/postgres). For detailed instructions on running this example, see the [tutorial](https://www.cockroachlabs.com/docs/stable/build-a-rust-app-with-cockroachdb.html).
 
-## Step 1. Specify the Rust Postgres driver as a dependency
+## Prerequisites
 
-Update your `Cargo.toml` file to specify a dependency on the Rust Postgres driver, as described in the [Rust Postgres driver](https://crates.io/crates/postgres).
+You must have rust and Cargo installed on your local machine, and a running CockroachDB cluster.
 
-Additionally, include the [OpenSSL bindings](https://crates.io/crates/postgres-openssl) and [Rust Postgres OpenSSL](https://crates.io/crates/postgres-openssl) crates as dependencies.
+## Step 1. Set the `DATABASE_URL` environment variable
 
-## Step 2. Create the `maxroach` users and `bank` database
-
-Start the built-in SQL shell:
+Set the `DATABASE_URL` environment variable to the connection URL of your CockroachDB cluster.
 
 ~~~ shell
-$ cockroach sql --certs-dir=certs
+export DATABASE_URL="postgresql://<username>:<password>@<hostname>:<port>/bank?sslmode=require&options=--cluster%3D<routing ID>"
 ~~~
 
-In the SQL shell, issue the following statements to create the `maxroach` user and `bank` database:
+Where:
 
-~~~ sql
-> CREATE USER IF NOT EXISTS maxroach;
-~~~
+* `<username>` is the SQL user on the CockroachDB cluster.
+* `<password>` is the password for the SQL user.
+* `<hostname>` is the hostname of the CockroachDB cluster.
+* `<port>` is the port number on which CockroachDB is running on the host.
+* `<routing ID>` is the routing ID cluster if the CockroachDB cluster is a Serverless cluster. Omit the options query parameter if the cluster is a Self-Hosted or Dedicated cluster.
 
-~~~ sql
-> CREATE DATABASE bank;
-~~~
+**Note**: You must set `sslmode=require` in the connection URL, as the `postgres` driver does not recognize `sslmode=verify-full`. This example uses `postgres-openssl`, which will perform host verification when the `sslmode=require` option is set, so `require` is functionally equivalent to `verify-full`.
 
-Give the `maxroach` user the necessary permissions:
+## Step 2. Run the Rust code
 
-~~~ sql
-> GRANT ALL ON DATABASE bank TO maxroach;
-~~~
-
-Exit the SQL shell:
-
-~~~ sql
-> \q
-~~~
-
-## Step 3. Generate a certificate for the `maxroach` user
-
-Create a certificate and key for the `maxroach` user by running the following command.  The code samples will run as this user.
+Build and run the example:
 
 ~~~ shell
-$ cockroach cert create-client maxroach --certs-dir=certs --ca-key=my-safe-directory/ca.key
+cargo run
 ~~~
 
-## Step 4. Run the Rust code
+After the dependencies are downloaded, the example is compiled and run. You should see output similar to this:
 
-### Basic statements
-
-Run `basic-sample.rs` to connect as the `maxroach` user and execute some basic SQL statements, inserting rows and reading and printing the rows.
-
-You might need to open `basic-sample.rs`, and edit the connection configuration parameters to connect to your cluster.
-
-### Transaction (with retry logic)
-
-Run `txn-sample.rs` to again connect as the `maxroach` user but this time execute a batch of statements as an atomic transaction to transfer funds from one account to another, where all included statements are either committed or aborted.
-
-You might need to open `txn-sample.rs`, and edit the connection configuration parameters to connect to your cluster.
+~~~
+Finished dev [unoptimized + debuginfo] target(s) in 0.13s
+ Running `target/debug/bank`
+Balances at 2022-08-15T17:27:21.298523Z:
+account id: db735b2b-1072-48b6-bd80-e9b7f521d2b0  balance: 250
+account id: f858534f-0c20-4c10-a0d3-402deae77fba  balance: 1000
+Final balances at 2022-08-15T17:27:21.734536Z:
+account id: db735b2b-1072-48b6-bd80-e9b7f521d2b0  balance: 350
+account id: f858534f-0c20-4c10-a0d3-402deae77fba  balance: 900
+Deleted accounts.
+~~~

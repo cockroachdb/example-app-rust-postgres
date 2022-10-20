@@ -71,10 +71,9 @@ fn delete_accounts(client: &mut Client) -> Result<(), Error> {
 
 fn main() -> Result<(), Error> {
     let connector = ssl_config().unwrap();
-    let connection_uri = env::var("DATABASE_URL").expect("$DATABASE_URL is not set");
+    let connection_uri = env::var("DATABASE_URL").expect("$DATABASE_URL is not set").to_owned() + "&application_name=docs_simplecrud_rust";
     let mut client =
         Client::connect(&connection_uri, connector).unwrap();
-
     println!("Creating accounts table if it doesn't already exist.");
     // Create the "accounts" table.
     client.execute(

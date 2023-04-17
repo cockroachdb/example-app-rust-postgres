@@ -7,7 +7,9 @@ use postgres_openssl::MakeTlsConnector;
 
 // BEGIN ssl_config
 fn ssl_config() -> Result<MakeTlsConnector, ErrorStack> {
-    let builder = SslConnector::builder(SslMethod::tls())?;
+    let mut builder = SslConnector::builder(SslMethod::tls())?;
+    // set this path to the downloaded CA certificate for your Dedicated cluster 
+    builder.set_ca_file("/PATH/TO/DEDICATED/CLUSTER/ca.crt")?;
     Ok(MakeTlsConnector::new(builder.build()))
 }
 // END ssl_config

@@ -4,12 +4,16 @@ The sample code in this directory demonstrates how to connect to CockroachDB wit
 
 You must have rust and Cargo installed on your local machine, and a running CockroachDB cluster.
 
-## Step 1. Set the `DATABASE_URL` environment variable
+## Step 1. Download the CA certificate
+
+Download the CA certificate for your CockroachDB Dedicated cluster. In the CockroachDB Cloud Console, select the Dedicated cluster you want to use, then click the **Connect** button. Follow the instructions to set up network access and create a SQL user, if you haven't done so already, and then connect to the cluster. Copy and run the command to download the CA certificate for your OS.
+
+## Step 2. Set the `DATABASE_URL` environment variable
 
 Set the `DATABASE_URL` environment variable to the connection URL of your CockroachDB cluster.
 
 ~~~ shell
-export DATABASE_URL="postgresql://<username>:<password>@<hostname>:<port>/bank?sslmode=require&options=--cluster%3D<routing ID>"
+export DATABASE_URL="postgresql://<username>:<password>@<hostname>:<port>/bank?sslmode=require"
 ~~~
 
 Where:
@@ -18,11 +22,10 @@ Where:
 * `<password>` is the password for the SQL user.
 * `<hostname>` is the hostname of the CockroachDB cluster.
 * `<port>` is the port number on which CockroachDB is running on the host.
-* `<routing ID>` is the routing ID cluster if the CockroachDB cluster is a Serverless cluster. Omit the options query parameter if the cluster is a Self-Hosted or Dedicated cluster.
 
 **Note**: You must set `sslmode=require` in the connection URL, as the `postgres` driver does not recognize `sslmode=verify-full`. This example uses `postgres-openssl`, which will perform host verification when the `sslmode=require` option is set, so `require` is functionally equivalent to `verify-full`.
 
-## Step 2. Run the Rust code
+## Step 3. Run the Rust code
 
 Build and run the example:
 
